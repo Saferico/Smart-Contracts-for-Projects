@@ -6,8 +6,8 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
-//import "./closedsea/OperatorFilterer.sol";
-import "https://github.com/Vectorized/closedsea/blob/main/src/OperatorFilterer.sol";
+import "./closedsea/OperatorFilterer.sol";
+
 
 contract Lazynaire is
     ERC721A,
