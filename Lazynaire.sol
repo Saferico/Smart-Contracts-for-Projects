@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity 0.8.20;
 // SPDX-License-Identifier: MIT
 
 import "erc721a/contracts/ERC721A.sol";
@@ -6,9 +6,16 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "./closedsea/OperatorFilterer.sol";
+//import "./closedsea/OperatorFilterer.sol";
+import "https://github.com/Vectorized/closedsea/blob/main/src/OperatorFilterer.sol";
 
-contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
+contract Lazynaire is
+    ERC721A,
+    ERC721AQueryable,
+    ERC2981,
+    Ownable,
+    OperatorFilterer
+{
     string private _baseTokenURI;
     string private _preRevealURI;
     bool internal _isRevealed;
@@ -60,6 +67,7 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
     error NotEligibleToMint(address user, Roles role, Phases currentPhase);
     error ExeedsUsersMintLimit(address user, uint256 amount, uint256 mintable);
     error InsufficientFunds(address user, uint256 value, uint256 mintPrice);
+    error ZeroAddress();
 
     constructor(
         uint256 collectionSize_,
@@ -163,6 +171,9 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
      * @param amount_ amount to mint
      */
     function devMint(address to_, uint256 amount_) external onlyOwner {
+        if (to_ == address(0)) {
+            revert ZeroAddress();
+        }
         // Check if the total supply does not exceed the collection size
         if (!(totalSupply() + amount_ <= _collectionSize)) {
             revert ExceedsCollectionSize(
@@ -180,6 +191,9 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
      * @param to_ address to withdraw funds to
      */
     function withdrawAll(address payable to_) external onlyOwner {
+        if (to_ == address(0)) {
+            revert ZeroAddress();
+        }
         to_.transfer(address(this).balance);
     }
 
@@ -208,7 +222,7 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
      */
     function tokenURI(
         uint256 tokenId
-    ) public view override returns (string memory) {
+    ) public view override(ERC721A, IERC721A) returns (string memory) {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
         if (!_isRevealed) {
@@ -242,7 +256,7 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721A, ERC2981) returns (bool) {
+    ) public view override(ERC721A, IERC721A, ERC2981) returns (bool) {
         // Supports the following `interfaceId`s:
         // - IERC165: 0x01ffc9a7
         // - IERC721: 0x80ac58cd
@@ -263,7 +277,7 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
     function setApprovalForAll(
         address operator,
         bool approved
-    ) public override(ERC721A) onlyAllowedOperatorApproval(operator) {
+    ) public override(ERC721A, IERC721A) onlyAllowedOperatorApproval(operator) {
         super.setApprovalForAll(operator, approved);
     }
 
@@ -273,7 +287,12 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
     function approve(
         address operator,
         uint256 tokenId
-    ) public payable override(ERC721A) onlyAllowedOperatorApproval(operator) {
+    )
+        public
+        payable
+        override(ERC721A, IERC721A)
+        onlyAllowedOperatorApproval(operator)
+    {
         super.approve(operator, tokenId);
     }
 
@@ -285,7 +304,7 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
         address from,
         address to,
         uint256 tokenId
-    ) public payable override(ERC721A) onlyAllowedOperator(from) {
+    ) public payable override(ERC721A, IERC721A) onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -310,6 +329,9 @@ contract Lazynaire is ERC721A, ERC2981, Ownable, OperatorFilterer {
         address receiver,
         uint96 feeNumerator
     ) public onlyOwner {
+        if (receiver == address(0)) {
+            revert ZeroAddress();
+        }
         _setDefaultRoyalty(receiver, feeNumerator);
     }
 
